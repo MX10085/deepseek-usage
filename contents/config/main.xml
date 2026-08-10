@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <group name="General">
+    <entry name="apiKey" type="String">
+      <default></default>
+    </entry>
+    <entry name="refreshInterval" type="Int">
+      <default>60</default>
+    </entry>
+    <entry name="lowThreshold" type="Double">
+      <default>10</default>
+    </entry>
+    <entry name="warnPercent" type="Int">
+      <default>50</default>
+    </entry>
+    <entry name="criticalPercent" type="Int">
+      <default>15</default>
+    </entry>
+    <entry name="compactMode" type="String">
+      <default>balance</default>
+    </entry>
+    <entry name="snapshots" type="String">
+      <default>[]</default>
+    </entry>
+  </group>
+</kcfg>

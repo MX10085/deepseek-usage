@@ -1,0 +1,23 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "mx10085@qq.com",
+                "Name": "Jiang"
+            }
+        ],
+        "Category": "System Information",
+        "Description": "Monitor your DeepSeek API balance and estimated usage right from the taskbar. Free balance API, local consumption estimation, low-balance notifications and usage history.",
+        "Description[zh_CN]": "实时查看 DeepSeek API 余额与用量",
+        "Icon": "images/deepseek-whale.svg",
+        "Id": "org.kde.deepseek.usage",
+        "License": "GPL-2.0-or-later",
+        "Name": "DeepSeek Usage Monitor",
+        "Name[zh_CN]": "DeepSeek 用量监控",
+        "Version": "1.0.0"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API": "declarative",
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-MainScript": "ui/main.qml"
+}
