@@ -142,12 +142,18 @@ PlasmoidItem {
 
         var now = Date.now();
         var last = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
-        // 检测到充值/赠送到账：余额明显回升，重置计量起点
+        // 检测到充值/赠送到账：余额明显回升。不重置历史，而是把充值金额
+        // 平移到所有历史快照上，使消耗曲线连续（充值前已消耗金额保留）。
         if (last && balanceNow > last.b + 0.01) {
-            snapshots = [{
+            var topup = balanceNow - last.b;
+            for (var i = 0; i < snapshots.length; i++)
+                snapshots[i].b += topup;
+
+            snapshots.push({
                 "t": now,
                 "b": balanceNow
-            }];
+            });
+            while (snapshots.length > 300)snapshots.shift()
             saveSnapshots();
             return ;
         }
