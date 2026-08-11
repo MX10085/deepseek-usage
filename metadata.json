@@ -14,7 +14,7 @@
         "License": "GPL-2.0-or-later",
         "Name": "DeepSeek Usage Monitor",
         "Name[zh_CN]": "DeepSeek 用量监控",
-        "Version": "1.0.0"
+        "Version": "1.0.1"
     },
     "KPackageStructure": "Plasma/Applet",
     "X-Plasma-API": "declarative",
