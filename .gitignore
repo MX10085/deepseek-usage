@@ -1,0 +1,15 @@
+# 发布包
+*.tar.gz
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 本地素材（可能含隐私）
+docs/share/
