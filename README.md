@@ -1,67 +1,52 @@
-# 🐋 DeepSeek Usage Monitor
+# AI Usage Monitor
 
-**A Plasma 6 widget that keeps an eye on your DeepSeek API balance — right in the taskbar.**
+A Plasma 6 taskbar widget for DeepSeek balance, Codex subscription limits, and OpenAI API usage.
 
-No need to open the DeepSeek console to check how much balance you have left. The widget polls the **free balance API**, shows the number on a small taskbar icon, and warns you before you run out.
+## Features
 
-![全景图01](全景图01.png)
-*Full-screen look — the balance badge sitting in the taskbar*
+- Two top-level pages: **DeepSeek** and **Codex / OpenAI**
+- DeepSeek balance, local usage estimates, history, and low-balance notifications
+- Codex `/status`-style information from local session records: 5-hour and weekly limits, reset times, model, plan, context usage, and session tokens
+- OpenAI organization API statistics: daily/monthly token counts, requests, and costs
+- Compact taskbar display; middle-click switches services
+- Automatic, subscription-only, API-only, and combined Codex/OpenAI modes
 
-## ✨ Features
+## Requirements
 
-- 💰 **Live balance** — polls the DeepSeek balance API on a configurable interval (default 60 s, minimum 30 s)
-- 📉 **Estimated usage** — since DeepSeek has no public usage endpoint, consumption is estimated locally from balance changes between polls
-- 🔔 **Low-balance notification** — system notification when balance drops below a threshold you set (default ¥10)
-- 📊 **Usage history** — periodic snapshots (up to 300) with a bar chart, so you can see your spending over time
-- 🎯 **Compact taskbar modes** — show balance (`¥12.34`) or remaining percent (`68%`)
-- 🖱️ **Hover popup** — balance, estimated usage, last update time, and the usage chart
-- ⚙️ **Fully configurable** — refresh interval, low-balance threshold, warning/critical percent, compact display mode
-- 🧮 **Free to use** — the balance API itself does not consume tokens
+- KDE Plasma 6
+- `plasma5support`
+- Python 3
+- A DeepSeek API key for the DeepSeek page
+- An OpenAI Admin API Key for organization Usage and Costs data
 
-![弹出面板01](弹出面板01.png)
-*Hover popup with balance, estimated usage and controls*
+A normal project API key cannot read organization-wide usage. Without an Admin API Key, the widget still shows local Codex session data.
 
-![弹出面板02](弹出面板02.png)
-*Usage history chart*
-
-![鼠标悬停](鼠标悬停.png)
-*Hovering the taskbar icon*
-
-## 📦 Requirements
-
-- KDE Plasma 6 (6.0 or later)
-- Qt 6 (Quick, Quick Layouts, Kirigami)
-- A [DeepSeek API key](https://platform.deepseek.com/api_keys)
-
-## 🛠️ Installation
+## Install
 
 ```bash
-plasmapkg2 --install deepseek-usage-v1.0.0.tar.gz
+kpackagetool6 --type Plasma/Applet --upgrade .
 ```
 
-or extract into `~/.local/share/plasma/plasmoids/` and restart the shell:
+The plugin keeps the existing `org.kde.deepseek.usage` ID so upgrades preserve existing panel instances and settings.
+
+## Configuration
+
+Open the widget settings to select the default page and Codex data source.
+
+For OpenAI API statistics, place the Admin API Key in a user-readable file and set its path in the widget settings:
 
 ```bash
-plasmashell --replace
+install -m 600 /dev/null ~/.config/openai/admin-key
+printf '%s\n' 'sk-admin-...' > ~/.config/openai/admin-key
+chmod 600 ~/.config/openai/admin-key
 ```
 
-Then right-click the panel → **Add Widgets** → search **DeepSeek Usage Monitor**.
+The key is read only by the helper and is never returned to QML. `OPENAI_ADMIN_KEY` is also supported when available in the Plasma session environment.
 
-## ⚙️ Configuration
+## Data access
 
-After adding the widget, open its settings and paste your API key:
+The bundled helper reads `~/.codex/sessions/**/*.jsonl` and returns only aggregate status fields. It does not read `~/.codex/auth.json`. In API mode it connects only to `https://api.openai.com/v1`.
 
-1. Right-click the widget → **Configure** → **General**
-2. Paste your DeepSeek API key (keep it private — it is stored in your local Plasma config, never sent anywhere except DeepSeek's own API)
-3. Adjust refresh interval / thresholds if you like
+## License
 
-> The widget uses the balance API with `Authorization: Bearer <your-key>` — the key is only sent to `api.deepseek.com`.
-
-## 🔧 Compatibility
-
-- Tested on **Plasma 6.x / Wayland** (X11 should also work)
-- DeepSeek API region: `https://api.deepseek.com`
-
-## 📄 License
-
-**GPL-2.0-or-later**
+GPL-2.0-or-later

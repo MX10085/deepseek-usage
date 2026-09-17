@@ -1,9 +1,11 @@
 import QtQuick 2.15
+import QtQuick.Controls 2.15 as QQC2
 import QtQuick.Layouts 1.15
 import org.kde.kirigami 2.20 as Kirigami
 import org.kde.notification
 import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.plasma.core 2.0 as PlasmaCore
+import org.kde.plasma.plasma5support 2.0 as Plasma5Support
 import org.kde.plasma.plasmoid 2.0
 
 PlasmoidItem {
@@ -28,6 +30,15 @@ PlasmoidItem {
     property string lastUpdateText: ""
     property var snapshots: []
     property bool booted: false
+    property int currentPage: plasmoid.configuration.defaultPage === "codex" ? 1 : 0
+    property var codexPayload: ({})
+    property string codexState: "idle"
+    property string codexError: ""
+    property string codexCommand: ""
+    readonly property var codexSubscription: codexPayload && codexPayload.subscription ? codexPayload.subscription : null
+    readonly property var codexApi: codexPayload && codexPayload.api ? codexPayload.api : null
+    readonly property real codexPrimaryUsed: codexSubscription && codexSubscription.primary ? Number(codexSubscription.primary.used_percent) : 0
+    readonly property string codexCompactText: codexApi ? "$" + Number(codexApi.today.cost).toFixed(2) : codexSubscription && codexSubscription.primary ? Math.round(100 - codexPrimaryUsed) + "%" : "C"
     property real todayUsage: 0
     property real weekUsage: 0
     property real totalUsage: 0
@@ -311,15 +322,60 @@ PlasmoidItem {
         plasmoid.configuration.compactMode = compactMode;
     }
 
+    function shellQuote(value) {
+        return "'" + String(value).replace(/'/g, "'\\\"'\\\"'") + "'";
+    }
+
+    function refreshCodex() {
+        if (codexCommand.length > 0)
+            codexSource.disconnectSource(codexCommand);
+        var helper = Qt.resolvedUrl("../tools/codex_status.py").toString().replace(/^file:\/\//, "");
+        var mode = plasmoid.configuration.codexMode || "auto";
+        var command = "/usr/bin/python3 " + shellQuote(helper) + " --mode " + shellQuote(mode);
+        if (plasmoid.configuration.codexHome)
+            command += " --codex-home " + shellQuote(plasmoid.configuration.codexHome);
+        if (plasmoid.configuration.openaiAdminKeyFile)
+            command += " --api-key-file " + shellQuote(plasmoid.configuration.openaiAdminKeyFile);
+        codexCommand = command;
+        codexState = "loading";
+        codexError = "";
+        codexSource.connectSource(command);
+    }
+
+    function toggleService() {
+        currentPage = currentPage === 0 ? 1 : 0;
+    }
+
     Plasmoid.backgroundHints: PlasmaCore.Types.DefaultBackground | PlasmaCore.Types.ConfigurableBackground
-    Plasmoid.title: "DeepSeek 用量监控"
-    Plasmoid.status: (lowBalance || state === "error" || state === "nokey") ? PlasmaCore.Types.NeedsAttentionStatus : PlasmaCore.Types.ActiveStatus
-    toolTipMainText: state === "ok" ? "DeepSeek 余额：" + curSymbol + balanceText : "DeepSeek 用量监控"
-    toolTipSubText: tooltipDetail
+    Plasmoid.title: "AI 用量监控"
+    Plasmoid.status: (lowBalance || state === "error" || codexState === "error") ? PlasmaCore.Types.NeedsAttentionStatus : PlasmaCore.Types.ActiveStatus
+    toolTipMainText: currentPage === 0 ? (state === "ok" ? "DeepSeek 余额：" + curSymbol + balanceText : "DeepSeek 用量监控") : "Codex / OpenAI：" + codexCompactText
+    toolTipSubText: currentPage === 0 ? tooltipDetail : codexError.length > 0 ? codexError : codexSubscription ? "5 小时已用 " + Math.round(codexPrimaryUsed) + "%\n模型：" + (codexSubscription.model || "未知") : codexApi ? "今日费用 $" + Number(codexApi.today.cost).toFixed(2) : "等待状态数据"
     Component.onCompleted: {
         loadSnapshots();
         booted = true;
         fetch();
+        refreshCodex();
+    }
+
+    Plasma5Support.DataSource {
+        id: codexSource
+        engine: "executable"
+        interval: 0
+        onNewData: function(sourceName, data) {
+            if (sourceName !== root.codexCommand)
+                return;
+            disconnectSource(sourceName);
+            try {
+                var parsed = JSON.parse(String(data.stdout || ""));
+                root.codexPayload = parsed;
+                root.codexState = parsed.status || "ok";
+                root.codexError = parsed.error || "";
+            } catch (e) {
+                root.codexState = "error";
+                root.codexError = data.stderr ? String(data.stderr) : "Codex 状态解析失败：" + e;
+            }
+        }
     }
 
     // ---------- 低余额系统通知 ----------
@@ -344,6 +400,13 @@ PlasmoidItem {
         onTriggered: root.fetch()
     }
 
+    Timer {
+        interval: Math.max(10, plasmoid.configuration.codexRefreshInterval || 15) * 1000
+        repeat: true
+        running: root.booted
+        onTriggered: root.refreshCodex()
+    }
+
     Connections {
         function onApiKeyChanged() {
             if (root.booted)
@@ -359,6 +422,10 @@ PlasmoidItem {
             root.compactMode = plasmoid.configuration.compactMode === "percent" ? "percent" : "balance";
         }
 
+        function onCodexModeChanged() { root.refreshCodex(); }
+        function onCodexHomeChanged() { root.refreshCodex(); }
+        function onOpenaiAdminKeyFileChanged() { root.refreshCodex(); }
+
         target: plasmoid.configuration
     }
 
@@ -371,7 +438,7 @@ PlasmoidItem {
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: mouse.button === Qt.MiddleButton ? root.toggleCompactMode() : root.expanded = !root.expanded
+        onClicked: mouse.button === Qt.MiddleButton ? root.toggleService() : root.expanded = !root.expanded
 
         Rectangle {
             anchors.fill: parent
@@ -389,12 +456,12 @@ PlasmoidItem {
 
         UsageRing {
             anchors.fill: parent
-            usage: root.remainingFrac
-            ringColor: root.ringDisplayColor
+            usage: root.currentPage === 0 ? root.remainingFrac : Math.max(0, Math.min(1, root.codexPrimaryUsed / 100))
+            ringColor: root.currentPage === 0 ? root.ringDisplayColor : root.codexPrimaryUsed >= (plasmoid.configuration.codexWarnPercent || 80) ? Kirigami.Theme.negativeTextColor : "#10A37F"
             lineWidth: 3.5
-            centerText: !root.hasData ? (root.state === "nokey" ? "无Key" : root.state === "error" ? "失败" : "...") : root.compactMode === "percent" ? Math.round(root.remainingFrac * 100) + "%" : root.balanceNow.toFixed(1)
+            centerText: root.currentPage === 1 ? root.codexCompactText : !root.hasData ? (root.state === "nokey" ? "无Key" : root.state === "error" ? "失败" : "...") : root.compactMode === "percent" ? Math.round(root.remainingFrac * 100) + "%" : root.balanceNow.toFixed(1)
             showSub: false
-            alert: root.lowBalance
+            alert: root.currentPage === 0 ? root.lowBalance : root.codexPrimaryUsed >= (plasmoid.configuration.codexWarnPercent || 80)
         }
 
     }
@@ -406,10 +473,29 @@ PlasmoidItem {
         Layout.preferredWidth: 380
         Layout.preferredHeight: 500
 
+        QQC2.TabBar {
+            id: serviceTabs
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.topMargin: 8
+            anchors.leftMargin: 18
+            anchors.rightMargin: 18
+            currentIndex: root.currentPage
+            onCurrentIndexChanged: root.currentPage = currentIndex
+
+            QQC2.TabButton { text: "DeepSeek" }
+            QQC2.TabButton { text: "Codex / OpenAI" }
+        }
+
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 18
+            anchors.leftMargin: 18
+            anchors.rightMargin: 18
+            anchors.bottomMargin: 18
+            anchors.topMargin: 58
             spacing: 9
+            visible: root.currentPage === 0
 
             // 头部：鲸鱼标 + 标题/副标题 + 状态点
             RowLayout {
@@ -627,6 +713,20 @@ PlasmoidItem {
 
             }
 
+        }
+
+        CodexOpenAIPage {
+            anchors.fill: parent
+            anchors.leftMargin: 18
+            anchors.rightMargin: 18
+            anchors.bottomMargin: 18
+            anchors.topMargin: 58
+            visible: root.currentPage === 1
+            payload: root.codexPayload
+            loading: root.codexState === "loading"
+            errorText: root.codexError
+            onRefreshRequested: root.refreshCodex()
+            onConfigureRequested: Plasmoid.internalAction("configure").trigger()
         }
 
     }

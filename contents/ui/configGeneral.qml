@@ -11,6 +11,12 @@ KCM.SimpleKCM {
     property alias cfg_warnPercent: warnSpin.value
     property alias cfg_criticalPercent: critSpin.value
     property string cfg_compactMode: "balance"
+    property string cfg_defaultPage: "deepseek"
+    property string cfg_codexMode: "auto"
+    property alias cfg_codexHome: codexHomeField.text
+    property alias cfg_openaiAdminKeyFile: adminKeyFileField.text
+    property alias cfg_codexRefreshInterval: codexRefreshSpin.value
+    property alias cfg_codexWarnPercent: codexWarnSpin.value
 
     Kirigami.FormLayout {
         QQC2.TextField {
@@ -72,6 +78,69 @@ KCM.SimpleKCM {
 
             Component.onCompleted: currentIndex = cfg_compactMode === "percent" ? 1 : 0
             onActivated: cfg_compactMode = currentIndex === 1 ? "percent" : "balance"
+        }
+
+        Kirigami.Separator {
+            Kirigami.FormData.isSection: true
+        }
+
+        QQC2.ComboBox {
+            id: defaultPageCombo
+            Kirigami.FormData.label: "默认页面："
+            model: ["DeepSeek", "Codex / OpenAI"]
+            Component.onCompleted: currentIndex = cfg_defaultPage === "codex" ? 1 : 0
+            onActivated: cfg_defaultPage = currentIndex === 1 ? "codex" : "deepseek"
+        }
+
+        QQC2.ComboBox {
+            id: codexModeCombo
+            Kirigami.FormData.label: "Codex 数据来源："
+            model: ["自动检测", "Codex 订阅", "OpenAI API", "同时显示"]
+            Component.onCompleted: {
+                var values = ["auto", "subscription", "api", "both"];
+                currentIndex = Math.max(0, values.indexOf(cfg_codexMode));
+            }
+            onActivated: cfg_codexMode = ["auto", "subscription", "api", "both"][currentIndex]
+        }
+
+        QQC2.TextField {
+            id: codexHomeField
+            Kirigami.FormData.label: "Codex 数据目录："
+            Layout.fillWidth: true
+            placeholderText: "留空使用 ~/.codex"
+        }
+
+        QQC2.TextField {
+            id: adminKeyFileField
+            Kirigami.FormData.label: "Admin Key 文件："
+            Layout.fillWidth: true
+            placeholderText: "例如 ~/.config/openai/admin-key"
+        }
+
+        QQC2.SpinBox {
+            id: codexRefreshSpin
+            Kirigami.FormData.label: "Codex 刷新间隔（秒）："
+            from: 10
+            to: 3600
+            stepSize: 5
+            value: 15
+        }
+
+        QQC2.SpinBox {
+            id: codexWarnSpin
+            Kirigami.FormData.label: "额度提醒阈值（已用 %）："
+            from: 1
+            to: 99
+            stepSize: 5
+            value: 80
+        }
+
+        QQC2.Label {
+            Kirigami.FormData.label: "OpenAI API："
+            text: "API 统计需要组织 Owner 创建的 Admin API Key。密钥文件应只允许当前用户读取；也可通过 OPENAI_ADMIN_KEY 环境变量提供。"
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+            opacity: 0.7
         }
 
         QQC2.Label {

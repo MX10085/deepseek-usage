@@ -26,5 +26,23 @@
     <entry name="snapshots" type="String">
       <default>[]</default>
     </entry>
+    <entry name="defaultPage" type="String">
+      <default>deepseek</default>
+    </entry>
+    <entry name="codexMode" type="String">
+      <default>auto</default>
+    </entry>
+    <entry name="codexHome" type="String">
+      <default></default>
+    </entry>
+    <entry name="openaiAdminKeyFile" type="String">
+      <default></default>
+    </entry>
+    <entry name="codexRefreshInterval" type="Int">
+      <default>15</default>
+    </entry>
+    <entry name="codexWarnPercent" type="Int">
+      <default>80</default>
+    </entry>
   </group>
 </kcfg>
