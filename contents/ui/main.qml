@@ -438,7 +438,9 @@ PlasmoidItem {
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: mouse.button === Qt.MiddleButton ? root.toggleService() : root.expanded = !root.expanded
+        onClicked: function(mouse) {
+            mouse.button === Qt.MiddleButton ? root.toggleService() : root.expanded = !root.expanded;
+        }
 
         Rectangle {
             anchors.fill: parent

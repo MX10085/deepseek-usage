@@ -62,7 +62,7 @@ Item {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        onPositionChanged: {
+        onPositionChanged: function(mouse) {
             root.hoverIndex = Math.floor(mouse.x / (width / Math.max(1, root.values.length)));
         }
         onExited: root.hoverIndex = -1
