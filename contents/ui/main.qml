@@ -38,6 +38,7 @@ PlasmoidItem {
     readonly property var codexSubscription: codexPayload && codexPayload.subscription ? codexPayload.subscription : null
     readonly property var codexApi: codexPayload && codexPayload.api ? codexPayload.api : null
     readonly property real codexPrimaryUsed: codexSubscription && codexSubscription.primary ? Number(codexSubscription.primary.used_percent) : 0
+    readonly property real codexPrimaryRemaining: Math.max(0, 100 - codexPrimaryUsed)
     readonly property string codexCompactText: codexApi ? "$" + Number(codexApi.today.cost).toFixed(2) : codexSubscription && codexSubscription.primary ? Math.round(100 - codexPrimaryUsed) + "%" : "C"
     property real todayUsage: 0
     property real weekUsage: 0
@@ -349,8 +350,8 @@ PlasmoidItem {
     Plasmoid.backgroundHints: PlasmaCore.Types.DefaultBackground | PlasmaCore.Types.ConfigurableBackground
     Plasmoid.title: "AI 用量监控"
     Plasmoid.status: (lowBalance || state === "error" || codexState === "error") ? PlasmaCore.Types.NeedsAttentionStatus : PlasmaCore.Types.ActiveStatus
-    toolTipMainText: currentPage === 0 ? (state === "ok" ? "DeepSeek 余额：" + curSymbol + balanceText : "DeepSeek 用量监控") : "Codex / OpenAI：" + codexCompactText
-    toolTipSubText: currentPage === 0 ? tooltipDetail : codexError.length > 0 ? codexError : codexSubscription ? "5 小时已用 " + Math.round(codexPrimaryUsed) + "%\n模型：" + (codexSubscription.model || "未知") : codexApi ? "今日费用 $" + Number(codexApi.today.cost).toFixed(2) : "等待状态数据"
+    toolTipMainText: currentPage === 0 ? (state === "ok" ? "DeepSeek 余额：" + curSymbol + balanceText : "DeepSeek 用量监控") : "Codex：" + codexCompactText
+    toolTipSubText: currentPage === 0 ? tooltipDetail : codexError.length > 0 ? codexError : codexSubscription ? "5 小时剩余 " + Math.round(codexPrimaryRemaining) + "%（已用 " + Math.round(codexPrimaryUsed) + "%）\n模型：" + (codexSubscription.model || "未知") : codexApi ? "OpenAI API 今日费用 $" + Number(codexApi.today.cost).toFixed(2) : "等待状态数据"
     Component.onCompleted: {
         loadSnapshots();
         booted = true;
@@ -458,12 +459,12 @@ PlasmoidItem {
 
         UsageRing {
             anchors.fill: parent
-            usage: root.currentPage === 0 ? root.remainingFrac : Math.max(0, Math.min(1, root.codexPrimaryUsed / 100))
-            ringColor: root.currentPage === 0 ? root.ringDisplayColor : root.codexPrimaryUsed >= (plasmoid.configuration.codexWarnPercent || 80) ? Kirigami.Theme.negativeTextColor : "#10A37F"
+            usage: root.currentPage === 0 ? root.remainingFrac : Math.max(0, Math.min(1, root.codexPrimaryRemaining / 100))
+            ringColor: root.currentPage === 0 ? root.ringDisplayColor : root.codexPrimaryRemaining <= (plasmoid.configuration.codexCriticalRemaining || 20) ? Kirigami.Theme.negativeTextColor : root.codexPrimaryRemaining <= (plasmoid.configuration.codexWarnRemaining || 50) ? Kirigami.Theme.neutralTextColor : "#10A37F"
             lineWidth: 3.5
             centerText: root.currentPage === 1 ? root.codexCompactText : !root.hasData ? (root.state === "nokey" ? "无Key" : root.state === "error" ? "失败" : "...") : root.compactMode === "percent" ? Math.round(root.remainingFrac * 100) + "%" : root.balanceNow.toFixed(1)
             showSub: false
-            alert: root.currentPage === 0 ? root.lowBalance : root.codexPrimaryUsed >= (plasmoid.configuration.codexWarnPercent || 80)
+            alert: root.currentPage === 0 ? root.lowBalance : root.codexPrimaryRemaining <= (plasmoid.configuration.codexCriticalRemaining || 20)
         }
 
     }
@@ -487,7 +488,7 @@ PlasmoidItem {
             onCurrentIndexChanged: root.currentPage = currentIndex
 
             QQC2.TabButton { text: "DeepSeek" }
-            QQC2.TabButton { text: "Codex / OpenAI" }
+            QQC2.TabButton { text: "Codex" }
         }
 
         ColumnLayout {
@@ -727,6 +728,8 @@ PlasmoidItem {
             payload: root.codexPayload
             loading: root.codexState === "loading"
             errorText: root.codexError
+            warningRemaining: plasmoid.configuration.codexWarnRemaining || 50
+            criticalRemaining: plasmoid.configuration.codexCriticalRemaining || 20
             onRefreshRequested: root.refreshCodex()
             onConfigureRequested: Plasmoid.internalAction("configure").trigger()
         }

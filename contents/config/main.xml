@@ -41,8 +41,11 @@
     <entry name="codexRefreshInterval" type="Int">
       <default>15</default>
     </entry>
-    <entry name="codexWarnPercent" type="Int">
-      <default>80</default>
+    <entry name="codexWarnRemaining" type="Int">
+      <default>50</default>
+    </entry>
+    <entry name="codexCriticalRemaining" type="Int">
+      <default>20</default>
     </entry>
   </group>
 </kcfg>

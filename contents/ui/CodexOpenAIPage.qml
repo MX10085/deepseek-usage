@@ -10,6 +10,8 @@ Item {
     property var payload: ({})
     property bool loading: false
     property string errorText: ""
+    property int warningRemaining: 50
+    property int criticalRemaining: 20
     property var subscription: payload && payload.subscription ? payload.subscription : null
     property var apiUsage: payload && payload.api ? payload.api : null
     property int subPage: subscription ? 0 : 1
@@ -46,7 +48,7 @@ Item {
             ColumnLayout {
                 spacing: 1
                 PlasmaComponents3.Label {
-                    text: "CODEX / OPENAI"
+                    text: "CODEX"
                     color: "#10A37F"
                     font.pixelSize: 11
                     font.bold: true
@@ -89,12 +91,12 @@ Item {
                     Layout.preferredHeight: 150
                     UsageRing {
                         anchors.fill: parent
-                        usage: subscription && subscription.primary ? Math.max(0, Math.min(1, Number(subscription.primary.used_percent) / 100)) : 0
-                        ringColor: subscription && subscription.primary && Number(subscription.primary.used_percent) >= 80 ? Kirigami.Theme.negativeTextColor : "#10A37F"
+                        usage: subscription && subscription.primary ? Math.max(0, Math.min(1, (100 - Number(subscription.primary.used_percent)) / 100)) : 0
+                        ringColor: subscription && subscription.primary && 100 - Number(subscription.primary.used_percent) <= page.criticalRemaining ? Kirigami.Theme.negativeTextColor : subscription && subscription.primary && 100 - Number(subscription.primary.used_percent) <= page.warningRemaining ? Kirigami.Theme.neutralTextColor : "#10A37F"
                         lineWidth: 10
-                        centerText: subscription && subscription.primary ? page.percentText(subscription.primary.used_percent) : "—"
-                        subText: "5 小时已用"
-                        alert: subscription && subscription.primary && Number(subscription.primary.used_percent) >= 80
+                        centerText: subscription && subscription.primary ? page.percentText(100 - Number(subscription.primary.used_percent)) : "—"
+                        subText: "5 小时剩余"
+                        alert: subscription && subscription.primary && 100 - Number(subscription.primary.used_percent) <= page.criticalRemaining
                     }
                 }
 
@@ -102,12 +104,12 @@ Item {
                     Layout.fillWidth: true
                     spacing: 8
                     StatCard {
-                        title: "5 小时额度"
-                        value: subscription && subscription.primary ? page.percentText(subscription.primary.used_percent) : "—"
+                        title: "5 小时剩余"
+                        value: subscription && subscription.primary ? page.percentText(100 - Number(subscription.primary.used_percent)) : "—"
                     }
                     StatCard {
-                        title: "每周额度"
-                        value: subscription && subscription.secondary ? page.percentText(subscription.secondary.used_percent) : "—"
+                        title: "每周剩余"
+                        value: subscription && subscription.secondary ? page.percentText(100 - Number(subscription.secondary.used_percent)) : "—"
                     }
                 }
                 RowLayout {

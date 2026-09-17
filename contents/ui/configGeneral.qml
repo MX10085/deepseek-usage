@@ -16,7 +16,8 @@ KCM.SimpleKCM {
     property alias cfg_codexHome: codexHomeField.text
     property alias cfg_openaiAdminKeyFile: adminKeyFileField.text
     property alias cfg_codexRefreshInterval: codexRefreshSpin.value
-    property alias cfg_codexWarnPercent: codexWarnSpin.value
+    property alias cfg_codexWarnRemaining: codexWarnSpin.value
+    property alias cfg_codexCriticalRemaining: codexCriticalSpin.value
 
     Kirigami.FormLayout {
         QQC2.TextField {
@@ -87,7 +88,7 @@ KCM.SimpleKCM {
         QQC2.ComboBox {
             id: defaultPageCombo
             Kirigami.FormData.label: "默认页面："
-            model: ["DeepSeek", "Codex / OpenAI"]
+            model: ["DeepSeek", "Codex"]
             Component.onCompleted: currentIndex = cfg_defaultPage === "codex" ? 1 : 0
             onActivated: cfg_defaultPage = currentIndex === 1 ? "codex" : "deepseek"
         }
@@ -128,11 +129,20 @@ KCM.SimpleKCM {
 
         QQC2.SpinBox {
             id: codexWarnSpin
-            Kirigami.FormData.label: "额度提醒阈值（已用 %）："
+            Kirigami.FormData.label: "额度警告阈值（剩余 %）："
             from: 1
             to: 99
             stepSize: 5
-            value: 80
+            value: 50
+        }
+
+        QQC2.SpinBox {
+            id: codexCriticalSpin
+            Kirigami.FormData.label: "额度严重阈值（剩余 %）："
+            from: 1
+            to: 99
+            stepSize: 5
+            value: 20
         }
 
         QQC2.Label {
