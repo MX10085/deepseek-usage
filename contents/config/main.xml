@@ -5,11 +5,11 @@
                           http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
   <kcfgfile name=""/>
   <group name="General">
-    <entry name="apiKey" type="String">
+    <entry name="deepseekApiKeyFile" type="String">
       <default></default>
     </entry>
     <entry name="refreshInterval" type="Int">
-      <default>60</default>
+      <default>300</default>
     </entry>
     <entry name="lowThreshold" type="Double">
       <default>10</default>
@@ -42,7 +42,7 @@
       <default></default>
     </entry>
     <entry name="codexRefreshInterval" type="Int">
-      <default>15</default>
+      <default>60</default>
     </entry>
     <entry name="codexWarnRemaining" type="Int">
       <default>50</default>

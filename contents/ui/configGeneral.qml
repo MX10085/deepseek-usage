@@ -5,7 +5,7 @@ import org.kde.kirigami 2.20 as Kirigami
 import org.kde.kcmutils as KCM
 
 KCM.SimpleKCM {
-    property alias cfg_apiKey: apiKeyField.text
+    property alias cfg_deepseekApiKeyFile: apiKeyFileField.text
     property alias cfg_refreshInterval: refreshSpin.value
     property alias cfg_lowThreshold: lowSpin.value
     property alias cfg_fullBalanceTarget: fullBalanceSpin.value
@@ -22,25 +22,20 @@ KCM.SimpleKCM {
 
     Kirigami.FormLayout {
         QQC2.TextField {
-            id: apiKeyField
-            Kirigami.FormData.label: "API Key："
+            id: apiKeyFileField
+            Kirigami.FormData.label: "DeepSeek Key 文件："
             Layout.fillWidth: true
-            placeholderText: "sk-..."
-            echoMode: showKey.checked ? TextInput.Normal : TextInput.Password
-        }
-        QQC2.CheckBox {
-            id: showKey
-            text: "显示 Key"
+            placeholderText: "例如 ~/.config/deepseek/api-key"
         }
 
         QQC2.SpinBox {
             id: refreshSpin
             Kirigami.FormData.label: "刷新间隔（秒）："
-            from: 30
+            from: 60
             to: 3600
-            stepSize: 30
+            stepSize: 60
             editable: true
-            value: 60
+            value: 300
         }
 
         QQC2.SpinBox {
@@ -132,10 +127,10 @@ KCM.SimpleKCM {
         QQC2.SpinBox {
             id: codexRefreshSpin
             Kirigami.FormData.label: "Codex 刷新间隔（秒）："
-            from: 10
+            from: 30
             to: 3600
-            stepSize: 5
-            value: 15
+            stepSize: 30
+            value: 60
         }
 
         QQC2.SpinBox {

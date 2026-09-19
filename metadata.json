@@ -14,7 +14,7 @@
         "License": "GPL-2.0-or-later",
         "Name": "AI Usage Monitor",
         "Name[zh_CN]": "AI 用量监控",
-        "Version": "2.0.3"
+        "Version": "2.0.4"
     },
     "KPackageStructure": "Plasma/Applet",
     "X-Plasma-API": "declarative",

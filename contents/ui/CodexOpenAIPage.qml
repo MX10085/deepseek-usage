@@ -12,6 +12,7 @@ Item {
     property string errorText: ""
     property int warningRemaining: 50
     property int criticalRemaining: 20
+    property bool animationsEnabled: true
     property var subscription: payload && payload.subscription ? payload.subscription : null
     property var apiUsage: payload && payload.api ? payload.api : null
     property int subPage: subscription ? 0 : 1
@@ -97,6 +98,7 @@ Item {
                         centerText: subscription && subscription.primary ? page.percentText(100 - Number(subscription.primary.used_percent)) : "—"
                         subText: "5 小时剩余"
                         alert: subscription && subscription.primary && 100 - Number(subscription.primary.used_percent) <= page.criticalRemaining
+                        animateAlert: page.animationsEnabled
                     }
                 }
 

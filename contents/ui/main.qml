@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtCore
 import QtQuick.Controls 2.15 as QQC2
 import QtQuick.Layouts 1.15
 import org.kde.kirigami 2.20 as Kirigami
@@ -14,8 +15,11 @@ PlasmoidItem {
     id: root
 
     // ---------- 配置 ----------
-    property string apiKey: plasmoid.configuration.apiKey
-    property int refreshSec: Math.max(30, plasmoid.configuration.refreshInterval || 60)
+    // DeepSeek Key 仅在运行时从权限受限的文件读取，不写入 Plasma 配置。
+    property string apiKey: ""
+    property string apiKeyFile: plasmoid.configuration.deepseekApiKeyFile || ""
+    property string apiKeyCommand: ""
+    property int refreshSec: Math.max(60, plasmoid.configuration.refreshInterval || 300)
     property real lowThreshold: plasmoid.configuration.lowThreshold === undefined ? 10 : plasmoid.configuration.lowThreshold
     property int warnPercent: plasmoid.configuration.warnPercent === undefined ? 50 : Math.max(1, Math.min(99, plasmoid.configuration.warnPercent))
     property int criticalPercent: plasmoid.configuration.criticalPercent === undefined ? 15 : Math.max(1, Math.min(99, plasmoid.configuration.criticalPercent))
@@ -329,6 +333,21 @@ PlasmoidItem {
         return "'" + String(value).replace(/'/g, "'\\\"'\\\"'") + "'";
     }
 
+    function loadApiKey() {
+        if (apiKeyCommand.length > 0)
+            keySource.disconnectSource(apiKeyCommand);
+        apiKey = "";
+        if (!apiKeyFile || apiKeyFile.length === 0) {
+            state = "nokey";
+            return;
+        }
+        var keyPath = apiKeyFile;
+        if (keyPath.indexOf("~/") === 0)
+            keyPath = StandardPaths.writableLocation(StandardPaths.HomeLocation) + keyPath.substring(1);
+        apiKeyCommand = "/usr/bin/cat " + shellQuote(keyPath);
+        keySource.connectSource(apiKeyCommand);
+    }
+
     function refreshCodex() {
         if (codexCommand.length > 0)
             codexSource.disconnectSource(codexCommand);
@@ -357,8 +376,27 @@ PlasmoidItem {
     Component.onCompleted: {
         loadSnapshots();
         booted = true;
-        fetch();
+        loadApiKey();
         refreshCodex();
+    }
+
+    Plasma5Support.DataSource {
+        id: keySource
+        engine: "executable"
+        interval: 0
+        onNewData: function(sourceName, data) {
+            if (sourceName !== root.apiKeyCommand)
+                return;
+            disconnectSource(sourceName);
+            var loadedKey = String(data.stdout || "").trim();
+            if (loadedKey.length === 0) {
+                root.state = "nokey";
+                root.lastError = data.stderr ? String(data.stderr) : "无法读取 DeepSeek Key 文件";
+                return;
+            }
+            root.apiKey = loadedKey;
+            root.fetch();
+        }
     }
 
     Plasma5Support.DataSource {
@@ -404,17 +442,16 @@ PlasmoidItem {
     }
 
     Timer {
-        interval: Math.max(10, plasmoid.configuration.codexRefreshInterval || 15) * 1000
+        interval: Math.max(30, plasmoid.configuration.codexRefreshInterval || 60) * 1000
         repeat: true
         running: root.booted
         onTriggered: root.refreshCodex()
     }
 
     Connections {
-        function onApiKeyChanged() {
+        function onDeepseekApiKeyFileChanged() {
             if (root.booted)
-                root.fetch();
-
+                root.loadApiKey();
         }
 
         function onRefreshIntervalChanged() {
@@ -594,6 +631,7 @@ PlasmoidItem {
                     subText: root.state === "nokey" || root.state === "error" ? "" : root.hasData ? root.curSymbol + root.balanceNow.toFixed(2) + " 可用" : ""
                     showSub: root.hasData && root.state === "ok"
                     alert: root.lowBalance
+                    animateAlert: root.expanded && root.currentPage === 0
                 }
 
             }
@@ -732,6 +770,7 @@ PlasmoidItem {
             errorText: root.codexError
             warningRemaining: plasmoid.configuration.codexWarnRemaining || 50
             criticalRemaining: plasmoid.configuration.codexCriticalRemaining || 20
+            animationsEnabled: root.expanded && root.currentPage === 1
             onRefreshRequested: root.refreshCodex()
             onConfigureRequested: Plasmoid.internalAction("configure").trigger()
         }

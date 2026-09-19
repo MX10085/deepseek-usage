@@ -14,7 +14,8 @@ Item {
     property string subText: ""
     property bool showSub: true
     property color textColor: Kirigami.Theme.textColor
-    property bool animateSweep: true
+    property bool animateSweep: false
+    property bool animateAlert: true
     property bool alert: false       // 低余额时呼吸光晕
 
     readonly property real diameter: Math.min(width, height)
@@ -23,8 +24,6 @@ Item {
 
     // 高亮扫描角度（0..360，从 12 点方向顺时针）
     property real sweep: 0
-    // 呼吸脉冲 0..1
-    property real pulse: 0
 
     Canvas {
         id: cvs
@@ -43,10 +42,10 @@ Item {
             var endA = startA + p * Math.PI * 2;
 
             // 柔和光晕
-            var glowAlpha = 0.10 + (root.alert ? 0.32 * root.pulse : 0.05);
+            var glowAlpha = root.alert ? 0.26 : 0.15;
             var glow = ctx.createRadialGradient(cx, cy, r - root.lineWidth, cx, cy, r + root.lineWidth + 8);
-            glow.addColorStop(0, Qt.rgba(root.ringColor.r, root.ringColor.g, root.ringColor.b, glowAlpha));
-            glow.addColorStop(1, Qt.rgba(root.ringColor.r, root.ringColor.g, root.ringColor.b, 0));
+            glow.addColorStop(0, Qt.rgba(root.ringColor.r, root.ringColor.g, root.ringColor.b, glowAlpha).toString());
+            glow.addColorStop(1, Qt.rgba(root.ringColor.r, root.ringColor.g, root.ringColor.b, 0).toString());
             ctx.fillStyle = glow;
             ctx.fillRect(0, 0, w, h);
 
@@ -61,8 +60,8 @@ Item {
             // 用量弧（渐变）
             if (p > 0.005) {
                 var grad = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
-                grad.addColorStop(0, root.ringLight);
-                grad.addColorStop(1, root.ringDark);
+                grad.addColorStop(0, root.ringLight.toString());
+                grad.addColorStop(1, root.ringDark.toString());
                 ctx.strokeStyle = grad;
                 ctx.beginPath();
                 ctx.arc(cx, cy, r, startA, endA);
@@ -85,6 +84,28 @@ Item {
         }
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
+    }
+
+    // 告警呼吸环仅动画场景图透明度，避免 Canvas 每帧重绘。
+    Rectangle {
+        anchors.centerIn: parent
+        width: Math.max(0, root.diameter - root.lineWidth)
+        height: width
+        radius: width / 2
+        color: "transparent"
+        border.width: Math.max(1, root.lineWidth * 0.7)
+        border.color: root.ringColor
+        visible: root.alert
+        property int pulseStep: 0
+        opacity: 0.50 + 0.28 * Math.sin(pulseStep * Math.PI / 10)
+        layer.enabled: visible
+
+        Timer {
+            interval: 100
+            repeat: true
+            running: root.alert && root.animateAlert && root.visible
+            onTriggered: parent.pulseStep = (parent.pulseStep + 1) % 20
+        }
     }
 
     Column {
@@ -129,19 +150,8 @@ Item {
         loops: Animation.Infinite
     }
 
-    // 低余额呼吸
-    NumberAnimation on pulse {
-        running: root.alert
-        from: 0
-        to: 1
-        duration: 1100
-        loops: Animation.Infinite
-        easing.type: Easing.InOutSine
-    }
-
     onUsageChanged: cvs.requestPaint()
     onRingColorChanged: cvs.requestPaint()
     onTrackColorChanged: cvs.requestPaint()
     onSweepChanged: cvs.requestPaint()
-    onPulseChanged: cvs.requestPaint()
 }

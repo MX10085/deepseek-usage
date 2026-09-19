@@ -34,6 +34,16 @@ The plugin keeps the existing `org.kde.deepseek.usage` ID so upgrades preserve e
 
 Open the widget settings to select the default page and Codex data source.
 
+Store the DeepSeek API Key in a file readable only by your user, then set that file path in the widget settings:
+
+```bash
+install -Dm600 /dev/null ~/.config/deepseek/api-key
+printf '%s\n' 'your-deepseek-api-key' > ~/.config/deepseek/api-key
+chmod 600 ~/.config/deepseek/api-key
+```
+
+`~/` paths and absolute paths are supported. The DeepSeek balance refresh defaults to 5 minutes; Codex status defaults to 60 seconds.
+
 For OpenAI API statistics, place the Admin API Key in a user-readable file and set its path in the widget settings:
 
 ```bash
