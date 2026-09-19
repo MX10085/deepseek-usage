@@ -8,6 +8,7 @@ KCM.SimpleKCM {
     property alias cfg_apiKey: apiKeyField.text
     property alias cfg_refreshInterval: refreshSpin.value
     property alias cfg_lowThreshold: lowSpin.value
+    property alias cfg_fullBalanceTarget: fullBalanceSpin.value
     property alias cfg_warnPercent: warnSpin.value
     property alias cfg_criticalPercent: critSpin.value
     property string cfg_compactMode: "balance"
@@ -50,6 +51,16 @@ KCM.SimpleKCM {
             stepSize: 5
             editable: true
             value: 10
+        }
+
+        QQC2.SpinBox {
+            id: fullBalanceSpin
+            Kirigami.FormData.label: "100% 基准余额（元）："
+            from: 1
+            to: 10000
+            stepSize: 10
+            editable: true
+            value: 100
         }
 
         QQC2.SpinBox {

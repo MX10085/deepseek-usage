@@ -20,7 +20,7 @@ PlasmoidItem {
     property int warnPercent: plasmoid.configuration.warnPercent === undefined ? 50 : Math.max(1, Math.min(99, plasmoid.configuration.warnPercent))
     property int criticalPercent: plasmoid.configuration.criticalPercent === undefined ? 15 : Math.max(1, Math.min(99, plasmoid.configuration.criticalPercent))
     property string compactMode: plasmoid.configuration.compactMode === "percent" ? "percent" : "balance"
-    property real balanceCapacity: Number(plasmoid.configuration.balanceCapacity || 0)
+    property real fullBalanceTarget: Math.max(1, Number(plasmoid.configuration.fullBalanceTarget || 100))
     property bool notifiedLow: false
     // ---------- 运行状态 ----------
     property var infos: []
@@ -52,7 +52,7 @@ PlasmoidItem {
     readonly property bool lowBalance: state === "ok" && firstInfo && balanceNow >= 0 && balanceNow < lowThreshold
     readonly property bool hasData: firstInfo !== null && firstInfo !== undefined
     // ---------- 用量百分比 ----------
-    readonly property real fullBalance: balanceCapacity > 0 ? Math.max(balanceCapacity, balanceNow) : balanceNow
+    readonly property real fullBalance: fullBalanceTarget
     readonly property real remainingFrac: fullBalance > 0 ? Math.max(0, Math.min(1, balanceNow / fullBalance)) : 1
     readonly property real usagePercent: fullBalance > 0 ? Math.max(0, Math.min(100, (fullBalance - balanceNow) / fullBalance * 100)) : 0
     readonly property real warnFrac: warnPercent / 100
@@ -148,17 +148,6 @@ PlasmoidItem {
 
     function saveSnapshots() {
         plasmoid.configuration.snapshots = JSON.stringify(snapshots);
-    }
-
-    function updateBalanceCapacity() {
-        if (balanceNow <= 0)
-            return;
-
-        // 首次运行以当前余额作为 100%；以后只在余额创出新高时提高基准。
-        if (balanceCapacity <= 0 || balanceNow > balanceCapacity + 0.01) {
-            balanceCapacity = balanceNow;
-            plasmoid.configuration.balanceCapacity = balanceCapacity;
-        }
     }
 
     function recordSnapshot() {
@@ -299,7 +288,6 @@ PlasmoidItem {
                         lastError = "响应中没有余额数据";
                         return ;
                     }
-                    updateBalanceCapacity();
                     recordSnapshot();
                     refreshUsage();
                     lastUpdateText = Qt.formatTime(new Date(), "hh:mm:ss");
@@ -703,7 +691,7 @@ PlasmoidItem {
             }
 
             PlasmaComponents3.Label {
-                text: "100% 按历史最高余额计算；充值不清除本地消耗记录"
+                text: "100% 基准为 " + root.curSymbol + root.fullBalance.toFixed(0) + "；可在设置中修改"
                 font.pixelSize: 9
                 opacity: 0.6
                 elide: Text.ElideRight
