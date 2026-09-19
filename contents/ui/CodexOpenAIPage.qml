@@ -31,11 +31,11 @@ Item {
         return String(n);
     }
 
-    function resetText(epoch) {
-        if (!epoch)
+    function resetText(limit) {
+        if (!limit || !limit.resets_at)
             return "—";
-        var date = new Date(Number(epoch) * 1000);
-        return Qt.formatDateTime(date, "MM-dd hh:mm");
+        var date = new Date(Number(limit.resets_at) * 1000);
+        return Qt.formatDateTime(date, "MM-dd hh:mm") + (limit.estimated_reset ? "（推算）" : "");
     }
 
     ColumnLayout {
@@ -135,8 +135,8 @@ Item {
                         spacing: 2
                         PlasmaComponents3.Label { text: "模型：" + (subscription ? subscription.model || "未知" : "—"); Layout.fillWidth: true; elide: Text.ElideRight }
                         PlasmaComponents3.Label { text: "计划：" + (subscription ? subscription.planType || "未知" : "—"); Layout.fillWidth: true; elide: Text.ElideRight }
-                        PlasmaComponents3.Label { text: "5 小时重置：" + (subscription && subscription.primary ? page.resetText(subscription.primary.resets_at) : "—"); Layout.fillWidth: true; elide: Text.ElideRight; opacity: 0.75 }
-                        PlasmaComponents3.Label { text: "每周重置：" + (subscription && subscription.secondary ? page.resetText(subscription.secondary.resets_at) : "—"); Layout.fillWidth: true; elide: Text.ElideRight; opacity: 0.75 }
+                        PlasmaComponents3.Label { text: "5 小时重置：" + page.resetText(subscription ? subscription.primary : null); Layout.fillWidth: true; elide: Text.ElideRight; opacity: 0.75 }
+                        PlasmaComponents3.Label { text: "每周重置：" + page.resetText(subscription ? subscription.secondary : null); Layout.fillWidth: true; elide: Text.ElideRight; opacity: 0.75 }
                     }
                 }
                 Item { Layout.fillHeight: true }

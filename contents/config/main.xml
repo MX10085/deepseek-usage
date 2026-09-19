@@ -26,6 +26,9 @@
     <entry name="snapshots" type="String">
       <default>[]</default>
     </entry>
+    <entry name="balanceCapacity" type="Double">
+      <default>0</default>
+    </entry>
     <entry name="defaultPage" type="String">
       <default>deepseek</default>
     </entry>

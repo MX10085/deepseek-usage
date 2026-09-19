@@ -5,8 +5,9 @@ A Plasma 6 taskbar widget for DeepSeek balance, Codex subscription limits, and O
 ## Features
 
 - Two top-level pages: **DeepSeek** and **Codex**; the Codex page combines subscription and OpenAI API data
-- DeepSeek balance, local usage estimates, history, and low-balance notifications
+- DeepSeek balance, local usage estimates, history, low-balance notifications, and an automatic 100% baseline based on the highest observed balance
 - Codex `/status`-style information from local session records: 5-hour and weekly limits, reset times, model, plan, context usage, and session tokens
+- Cached Codex limit windows keep reset times visible and roll expired windows forward while waiting for the next Codex event
 - OpenAI organization API statistics: daily/monthly token counts, requests, and costs
 - Compact taskbar display; middle-click switches services
 - Automatic, subscription-only, API-only, and combined Codex data modes

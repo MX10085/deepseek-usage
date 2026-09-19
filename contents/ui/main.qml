@@ -20,6 +20,7 @@ PlasmoidItem {
     property int warnPercent: plasmoid.configuration.warnPercent === undefined ? 50 : Math.max(1, Math.min(99, plasmoid.configuration.warnPercent))
     property int criticalPercent: plasmoid.configuration.criticalPercent === undefined ? 15 : Math.max(1, Math.min(99, plasmoid.configuration.criticalPercent))
     property string compactMode: plasmoid.configuration.compactMode === "percent" ? "percent" : "balance"
+    property real balanceCapacity: Number(plasmoid.configuration.balanceCapacity || 0)
     property bool notifiedLow: false
     // ---------- 运行状态 ----------
     property var infos: []
@@ -51,9 +52,9 @@ PlasmoidItem {
     readonly property bool lowBalance: state === "ok" && firstInfo && balanceNow >= 0 && balanceNow < lowThreshold
     readonly property bool hasData: firstInfo !== null && firstInfo !== undefined
     // ---------- 用量百分比 ----------
-    readonly property real startBalance: snapshots.length > 0 ? snapshots[0].b : balanceNow
-    readonly property real remainingFrac: startBalance > 0 ? Math.max(0, Math.min(1, balanceNow / startBalance)) : 1
-    readonly property real usagePercent: startBalance > 0 ? Math.max(0, Math.min(100, (startBalance - balanceNow) / startBalance * 100)) : 0
+    readonly property real fullBalance: balanceCapacity > 0 ? Math.max(balanceCapacity, balanceNow) : balanceNow
+    readonly property real remainingFrac: fullBalance > 0 ? Math.max(0, Math.min(1, balanceNow / fullBalance)) : 1
+    readonly property real usagePercent: fullBalance > 0 ? Math.max(0, Math.min(100, (fullBalance - balanceNow) / fullBalance * 100)) : 0
     readonly property real warnFrac: warnPercent / 100
     readonly property real critFrac: criticalPercent / 100
     readonly property color gaugeColor: state !== "ok" ? Kirigami.Theme.neutralTextColor : (lowBalance || remainingFrac <= critFrac) ? Kirigami.Theme.negativeTextColor : remainingFrac <= warnFrac ? Kirigami.Theme.neutralTextColor : Kirigami.Theme.positiveTextColor
@@ -117,6 +118,7 @@ PlasmoidItem {
         if (state === "ok") {
             lines.push("可用：" + (isAvailable ? "是" : "否"));
             lines.push("剩余：" + (remainingFrac * 100).toFixed(1) + "%");
+            lines.push("100% 基准：" + curSymbol + fullBalance.toFixed(2));
             lines.push("已用（估算）：" + usagePercent.toFixed(1) + "%");
             lines.push("今日消耗（估算）：" + curSymbol + todayUsage.toFixed(2));
             lines.push("最近更新：" + lastUpdateText);
@@ -146,6 +148,17 @@ PlasmoidItem {
 
     function saveSnapshots() {
         plasmoid.configuration.snapshots = JSON.stringify(snapshots);
+    }
+
+    function updateBalanceCapacity() {
+        if (balanceNow <= 0)
+            return;
+
+        // 首次运行以当前余额作为 100%；以后只在余额创出新高时提高基准。
+        if (balanceCapacity <= 0 || balanceNow > balanceCapacity + 0.01) {
+            balanceCapacity = balanceNow;
+            plasmoid.configuration.balanceCapacity = balanceCapacity;
+        }
     }
 
     function recordSnapshot() {
@@ -286,6 +299,7 @@ PlasmoidItem {
                         lastError = "响应中没有余额数据";
                         return ;
                     }
+                    updateBalanceCapacity();
                     recordSnapshot();
                     refreshUsage();
                     lastUpdateText = Qt.formatTime(new Date(), "hh:mm:ss");
@@ -689,7 +703,7 @@ PlasmoidItem {
             }
 
             PlasmaComponents3.Label {
-                text: "“消耗”按余额变化本地估算，充值到账后自动重新计周期"
+                text: "100% 按历史最高余额计算；充值不清除本地消耗记录"
                 font.pixelSize: 9
                 opacity: 0.6
                 elide: Text.ElideRight
